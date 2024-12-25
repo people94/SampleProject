@@ -1,0 +1,4 @@
+Content/AssetPacks/GameDevTV filter=lfs diff=lfs merge=lfs -text
+Content/AssetPacks/ModularSciFiSeason1 filter=lfs diff=lfs merge=lfs -text
+Content/AssetPacks/ParagonWraith filter=lfs diff=lfs merge=lfs -text
+Content/AssetPacks/ShooterGame filter=lfs diff=lfs merge=lfs -text
