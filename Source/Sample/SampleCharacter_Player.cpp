@@ -7,6 +7,8 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 ASampleCharacter_Player::ASampleCharacter_Player()
 {
@@ -40,7 +42,8 @@ void ASampleCharacter_Player::SetupPlayerInputComponent(UInputComponent* PlayerI
 	EnhancedInputComponent->BindAction(MoveInputAction, ETriggerEvent::Triggered, this, &ASampleCharacter_Player::MoveCharacter);
 	EnhancedInputComponent->BindAction(JumpInputAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 	EnhancedInputComponent->BindAction(RotateInputAction, ETriggerEvent::Triggered, this, &ASampleCharacter_Player::RotateCharacter);
-	//EnhancedInputComponent->BindAction(RotateInputAction, ETriggerEvent::Triggered, this, &APawn::AddControllerYawInput);
+	EnhancedInputComponent->BindAction(LockCharacterTurnInputAction, ETriggerEvent::Triggered, this, &ASampleCharacter_Player::ToggleLockCharacterTurn);
+	//EnhancedInputComponent->BindAction(LockCharacterTurnInputAction, ETriggerEvent::Canceled, this, &ASampleCharacter_Player::ToggleLockCharacterTurn);
 }
 
 void ASampleCharacter_Player::BeginPlay()
@@ -64,21 +67,43 @@ void ASampleCharacter_Player::BeginPlay()
 
 void ASampleCharacter_Player::MoveCharacter(const FInputActionInstance& Instance)
 {
-	FVector2D InputVector2D = Instance.GetValue().Get<FVector2D>();
+	FVector InputVector = Instance.GetValue().Get<FVector>();
+	FVector MoveDirection = this->GetActorForwardVector() * InputVector.X + GetActorRightVector() * InputVector.Y;
 
-	FVector MoveDirection(InputVector2D.X, InputVector2D.Y, 0.0f);
-	
-	this->AddMovementInput(MoveDirection * WalkSpeed);
+	float WorldDeltaSeconds = UGameplayStatics::GetWorldDeltaSeconds(this); // World DeltaSeconds 반영
+
+	this->AddMovementInput(MoveDirection * WalkSpeed * WorldDeltaSeconds);
+	SetActorRotation(FRotator(0.0f, FMath::FInterpConstantTo(GetActorRotation().Yaw, Camera->GetComponentRotation().Yaw, UGameplayStatics::GetWorldDeltaSeconds(this), TurnRate), 0.0f));
 }
 
 void ASampleCharacter_Player::RotateCharacter(const FInputActionInstance& Instance)
 {
-	FVector2D InputVector2D = Instance.GetValue().Get<FVector2D>();
 	FVector InputVector = Instance.GetValue().Get<FVector>();
-	FRotator Rotator = GetActorRotation();
-	Rotator.Yaw = InputVector.X;
+	FRotator Rotator(0.0f, InputVector.X, 0.0f);
+	float WorldDeltaSeconds = UGameplayStatics::GetWorldDeltaSeconds(this); // World DeltaSeconds 반영
 
-	AddControllerYawInput(InputVector.X * 50.0f);
+	SpringArm->AddRelativeRotation(Rotator * TurnRate * WorldDeltaSeconds); // Yaw 회전
+	if (!bLockCharacterTurn)
+	{
+		float CameraYaw = Camera->GetComponentRotation().Yaw;
+		float CharacterYaw = GetActorRotation().Yaw;
+		if (FMath::Abs<float>(CameraYaw - CharacterYaw) >= TurnLimit_Yaw)
+		{
+			SetActorRotation(FRotator(0.0f, CameraYaw, 0.0f)); // SpringArm의 Yaw 을 사용하면 캐릭터가 회전할때 SpringArm의 Rotation이 같이 바뀌어서 캐릭터의 회전이 이상해진다.
+		}
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("%s"), *GetController()->GetControlRotation().ToString());
+	AddControllerPitchInput(-InputVector.Y * TurnRate * WorldDeltaSeconds); // Pitch 회전
+}
 
-	UE_LOG(LogTemp, Warning, TEXT("X = %f Y = %f"), InputVector.X, InputVector.Y);
+void ASampleCharacter_Player::ToggleLockCharacterTurn(const FInputActionInstance& Instance)
+{
+	bLockCharacterTurn = Instance.GetValue().Get<bool>();
+	UE_LOG(LogTemp, Warning, TEXT("bLockCharacterTurn = %d"), bLockCharacterTurn);
+	if (!bLockCharacterTurn)
+	{
+		SpringArm->SetRelativeRotation(GetActorRotation());
+		GetController()->SetControlRotation(GetActorRotation());
+	}
 }

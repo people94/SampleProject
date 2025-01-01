@@ -31,26 +31,41 @@ protected:
 
 	virtual void RotateCharacter(const FInputActionInstance& Instance);
 
+	void ToggleLockCharacterTurn(const FInputActionInstance& Instance);
+
 private:
 
-	UPROPERTY(EditAnywhere)
+	// Camera
+	UPROPERTY(EditDefaultsOnly, Category = "Camera")
 	class UCameraComponent* Camera;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditDefaultsOnly, Category = "Camera")
 	class USpringArmComponent* SpringArm;
 
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(EditDefaultsOnly, Category = "Camera")
+	float TurnRate = 90.f;
+
+	float TurnLimit_Yaw = 90.f;
+
+	bool bLockCharacterTurn = false;
+
+	// Input
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TSoftObjectPtr<class UInputMappingContext> InputMapping;
 
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<class UInputAction> MoveInputAction;
 
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<class UInputAction> JumpInputAction;
 
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<class UInputAction> RotateInputAction;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<class UInputAction> LockCharacterTurnInputAction;
+
+	// Movement
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float WalkSpeed = 300.f;
 };
