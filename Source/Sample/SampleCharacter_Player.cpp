@@ -43,7 +43,7 @@ void ASampleCharacter_Player::SetupPlayerInputComponent(UInputComponent* PlayerI
 	EnhancedInputComponent->BindAction(JumpInputAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 	EnhancedInputComponent->BindAction(RotateInputAction, ETriggerEvent::Triggered, this, &ASampleCharacter_Player::RotateCharacter);
 	EnhancedInputComponent->BindAction(LockCharacterTurnInputAction, ETriggerEvent::Triggered, this, &ASampleCharacter_Player::ToggleLockCharacterTurn);
-	//EnhancedInputComponent->BindAction(LockCharacterTurnInputAction, ETriggerEvent::Canceled, this, &ASampleCharacter_Player::ToggleLockCharacterTurn);
+	EnhancedInputComponent->BindAction(CrouchInputAction, ETriggerEvent::Triggered, this, &ASampleCharacter_Player::Crouch);
 }
 
 void ASampleCharacter_Player::BeginPlay()
@@ -106,4 +106,10 @@ void ASampleCharacter_Player::ToggleLockCharacterTurn(const FInputActionInstance
 		SpringArm->SetRelativeRotation(GetActorRotation());
 		GetController()->SetControlRotation(GetActorRotation());
 	}
+}
+
+void ASampleCharacter_Player::Crouch(const FInputActionInstance& Instance)
+{
+	bCrouch = Instance.GetValue().Get<bool>();
+	UE_LOG(LogTemp, Warning, TEXT("bCrouch = %s"), bCrouch ? TEXT("True") : TEXT("False"));
 }

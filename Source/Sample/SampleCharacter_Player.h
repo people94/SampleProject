@@ -33,6 +33,8 @@ protected:
 
 	void ToggleLockCharacterTurn(const FInputActionInstance& Instance);
 
+	void Crouch(const FInputActionInstance& Instance);
+
 private:
 
 	// Camera
@@ -49,6 +51,8 @@ private:
 
 	bool bLockCharacterTurn = false;
 
+	bool bCrouch = false;
+
 	// Input
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TSoftObjectPtr<class UInputMappingContext> InputMapping;
@@ -64,6 +68,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<class UInputAction> LockCharacterTurnInputAction;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<class UInputAction> CrouchInputAction;
 
 	// Movement
 	UPROPERTY(EditAnywhere, Category = "Movement")
