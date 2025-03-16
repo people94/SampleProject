@@ -27,17 +27,22 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	// Input
+
 	virtual void MoveCharacter(const FInputActionInstance& Instance);
 
 	virtual void RotateCharacter(const FInputActionInstance& Instance);
 
 	void ToggleLockCharacterTurn(const FInputActionInstance& Instance);
 
-	void Crouch(const FInputActionInstance& Instance);
+	void StartCrouch(const FInputActionInstance& Instance);
+
+	void StartFire(const FInputActionInstance& Instance);
 
 private:
 
 	// Camera
+
 	UPROPERTY(EditDefaultsOnly, Category = "Camera")
 	class UCameraComponent* Camera;
 
@@ -51,9 +56,8 @@ private:
 
 	bool bLockCharacterTurn = false;
 
-	bool bCrouch = false;
-
 	// Input
+
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TSoftObjectPtr<class UInputMappingContext> InputMapping;
 
@@ -72,7 +76,22 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	TObjectPtr<class UInputAction> CrouchInputAction;
 
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<class UInputAction> FireInputAction;
+
 	// Movement
+
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float WalkSpeed = 300.f;
+
+	// Weapon
+
+	bool bIsFiring = false;
+
+	TObjectPtr<class ASPWeapon> Weapon;
+
+public:
+
+	UFUNCTION(BlueprintPure)
+	bool GetIsFiring() { return bIsFiring; }
 };

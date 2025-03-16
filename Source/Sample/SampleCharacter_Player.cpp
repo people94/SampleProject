@@ -9,6 +9,7 @@
 #include "InputMappingContext.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "SPWeapon.h"
 
 ASampleCharacter_Player::ASampleCharacter_Player()
 {
@@ -43,7 +44,8 @@ void ASampleCharacter_Player::SetupPlayerInputComponent(UInputComponent* PlayerI
 	EnhancedInputComponent->BindAction(JumpInputAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 	EnhancedInputComponent->BindAction(RotateInputAction, ETriggerEvent::Triggered, this, &ASampleCharacter_Player::RotateCharacter);
 	EnhancedInputComponent->BindAction(LockCharacterTurnInputAction, ETriggerEvent::Triggered, this, &ASampleCharacter_Player::ToggleLockCharacterTurn);
-	EnhancedInputComponent->BindAction(CrouchInputAction, ETriggerEvent::Triggered, this, &ASampleCharacter_Player::Crouch);
+	EnhancedInputComponent->BindAction(CrouchInputAction, ETriggerEvent::Triggered, this, &ASampleCharacter_Player::StartCrouch);
+	EnhancedInputComponent->BindAction(FireInputAction, ETriggerEvent::Triggered, this, &ASampleCharacter_Player::StartFire);
 }
 
 void ASampleCharacter_Player::BeginPlay()
@@ -108,8 +110,17 @@ void ASampleCharacter_Player::ToggleLockCharacterTurn(const FInputActionInstance
 	}
 }
 
-void ASampleCharacter_Player::Crouch(const FInputActionInstance& Instance)
+void ASampleCharacter_Player::StartCrouch(const FInputActionInstance& Instance)
 {
-	bCrouch = Instance.GetValue().Get<bool>();
-	UE_LOG(LogTemp, Warning, TEXT("bCrouch = %s"), bCrouch ? TEXT("True") : TEXT("False"));
+	Crouch(Instance.GetValue().Get<bool>());
+}
+
+void ASampleCharacter_Player::StartFire(const FInputActionInstance& Instance)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Fire OnGoing"));
+	bIsFiring = Instance.GetValue().Get<bool>();
+	if (Weapon)
+	{
+		Weapon->StartFire();
+	}
 }
