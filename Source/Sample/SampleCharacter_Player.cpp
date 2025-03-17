@@ -112,7 +112,12 @@ void ASampleCharacter_Player::ToggleLockCharacterTurn(const FInputActionInstance
 
 void ASampleCharacter_Player::StartCrouch(const FInputActionInstance& Instance)
 {
-	Crouch(Instance.GetValue().Get<bool>());
+	if (Instance.GetValue().Get<bool>())
+		Crouch();
+	else
+		UnCrouch();
+
+	UE_LOG(LogTemp, Warning, TEXT("Is Crouching : %d"), bIsCrouched);
 }
 
 void ASampleCharacter_Player::StartFire(const FInputActionInstance& Instance)
