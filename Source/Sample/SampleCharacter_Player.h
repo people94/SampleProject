@@ -39,6 +39,8 @@ protected:
 
 	void StartFire(const FInputActionInstance& Instance);
 
+	UFUNCTION(Server, reliable)
+	void ServerRotateCharacter(double RotateAmount);
 private:
 
 	// Camera

@@ -16,16 +16,18 @@ ASampleCharacter_Player::ASampleCharacter_Player()
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
 	SpringArm->TargetArmLength = 300.0f;
-	SpringArm->bUsePawnControlRotation = false;
+	SpringArm->bUsePawnControlRotation = true;
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
-	Camera->bUsePawnControlRotation = false;
+	Camera->bUsePawnControlRotation = true;
 
 	// 컨트롤러 방향대로 폰을 움직이지 않는다.
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 	bUseControllerRotationPitch = false;
+
+	bReplicates = true;
 }
 
 void ASampleCharacter_Player::Tick(float DeltaTime)
@@ -75,7 +77,9 @@ void ASampleCharacter_Player::MoveCharacter(const FInputActionInstance& Instance
 	float WorldDeltaSeconds = UGameplayStatics::GetWorldDeltaSeconds(this); // World DeltaSeconds 반영
 
 	this->AddMovementInput(MoveDirection * WalkSpeed * WorldDeltaSeconds);
-	SetActorRotation(FRotator(0.0f, FMath::FInterpConstantTo(GetActorRotation().Yaw, Camera->GetComponentRotation().Yaw, UGameplayStatics::GetWorldDeltaSeconds(this), TurnRate), 0.0f));
+	double RotateAmount = FMath::FInterpConstantTo(GetActorRotation().Yaw, Camera->GetComponentRotation().Yaw, UGameplayStatics::GetWorldDeltaSeconds(this), TurnRate);
+	ServerRotateCharacter(RotateAmount);
+	SetActorRotation(FRotator(0.0f, RotateAmount, 0.0f));
 }
 
 void ASampleCharacter_Player::RotateCharacter(const FInputActionInstance& Instance)
@@ -91,11 +95,13 @@ void ASampleCharacter_Player::RotateCharacter(const FInputActionInstance& Instan
 		float CharacterYaw = GetActorRotation().Yaw;
 		if (FMath::Abs<float>(CameraYaw - CharacterYaw) >= TurnLimit_Yaw)
 		{
-			SetActorRotation(FRotator(0.0f, CameraYaw, 0.0f)); // SpringArm의 Yaw 을 사용하면 캐릭터가 회전할때 SpringArm의 Rotation이 같이 바뀌어서 캐릭터의 회전이 이상해진다.
+			ServerRotateCharacter(CameraYaw);
+			SetActorRotation(FRotator(0.0f, CameraYaw, 0.0f));
 		}
 	}
 	
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *GetController()->GetControlRotation().ToString());
+	//UE_LOG(LogTemp, Warning, TEXT("Camera Rotation = %s"), *Camera->GetComponentRotation().ToString());
+	//UE_LOG(LogTemp, Warning, TEXT("Actor Rotation = %s"), *GetActorRotation().ToString());
 	AddControllerPitchInput(-InputVector.Y * TurnRate * WorldDeltaSeconds); // Pitch 회전
 }
 
@@ -128,4 +134,9 @@ void ASampleCharacter_Player::StartFire(const FInputActionInstance& Instance)
 	{
 		Weapon->StartFire();
 	}
+}
+
+void ASampleCharacter_Player::ServerRotateCharacter_Implementation(double RotateAmount)
+{
+	SetActorRotation(FRotator(0.0f, RotateAmount, 0.0f));
 }
