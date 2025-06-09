@@ -23,8 +23,9 @@ protected:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
 private:
-	class ACharacter* OwnerPawn;
+	class ASampleCharacter_Player* OwnerPawn;
 	class UCharacterMovementComponent* OwnerMovementComponent;
+	class USkeletalMeshComponent* Mesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float Speed = 0.0f;
@@ -44,7 +45,43 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	bool IsCrouch = 0.0f;
 
+	// Turn In Place Properties
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float RootYawOffset = 0.0f;
+	float LastRootYaw = 0.0f;
+	float CharacterYaw = 0.0f;
+	float LastCurveValue = 0.0f;
+	float DistanceCurve = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float TurnLimit_Yaw = 90.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float TurnInPlaceSpeed = 5.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	FName BaseBoneName = "pelvis";
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	FName CompareBoneName = "spine_02";
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float TurnInPlaceYaw = 0.0f;
+
+	bool bTurning = false;
+	float StartYaw = 0.0f;
+	float TargetYaw = 0.0f;
+
 	//UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	//bool IsSprint = 0.0f;
 public:
+	void SetTurnInPlaceYaw(float value) { TurnInPlaceYaw = value; }
+
+protected:
+	// Turn In Place Functions
+
+	void TurnInPlace();
+	void TurnInPlace1();
+	void TurnInPlace2();
 };

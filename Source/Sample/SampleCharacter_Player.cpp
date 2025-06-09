@@ -9,7 +9,9 @@
 #include "InputMappingContext.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "SPWeapon.h"
+#include "SampleAnimInstance_Character.h"
 
 ASampleCharacter_Player::ASampleCharacter_Player()
 {
@@ -78,8 +80,13 @@ void ASampleCharacter_Player::MoveCharacter(const FInputActionInstance& Instance
 
 	this->AddMovementInput(MoveDirection * WalkSpeed * WorldDeltaSeconds);
 	double RotateAmount = FMath::FInterpConstantTo(GetActorRotation().Yaw, Camera->GetComponentRotation().Yaw, UGameplayStatics::GetWorldDeltaSeconds(this), TurnRate);
-	ServerRotateCharacter(RotateAmount);
-	SetActorRotation(FRotator(0.0f, RotateAmount, 0.0f));
+	//ServerRotateCharacter(RotateAmount);
+	//SetActorRotation(FRotator(0.0f, RotateAmount, 0.0f));
+	//ServerRotateCharacter(Camera->GetComponentRotation().Yaw);
+	if(bLockCharacterTurn)
+		SetActorRotation(FRotator(0.0f, GetActorRotation().Yaw, 0.0f));
+	else
+		SetActorRotation(FRotator(0.0f, GetBaseAimRotation().Yaw, 0.0f));
 }
 
 void ASampleCharacter_Player::RotateCharacter(const FInputActionInstance& Instance)
@@ -88,20 +95,26 @@ void ASampleCharacter_Player::RotateCharacter(const FInputActionInstance& Instan
 	FRotator Rotator(0.0f, InputVector.X, 0.0f);
 	float WorldDeltaSeconds = UGameplayStatics::GetWorldDeltaSeconds(this); // World DeltaSeconds 반영
 
-	SpringArm->AddRelativeRotation(Rotator * TurnRate * WorldDeltaSeconds); // Yaw 회전
-	if (!bLockCharacterTurn)
-	{
-		float CameraYaw = Camera->GetComponentRotation().Yaw;
-		float CharacterYaw = GetActorRotation().Yaw;
-		if (FMath::Abs<float>(CameraYaw - CharacterYaw) >= TurnLimit_Yaw)
-		{
-			ServerRotateCharacter(CameraYaw);
-			SetActorRotation(FRotator(0.0f, CameraYaw, 0.0f));
-		}
-	}
-	
-	//UE_LOG(LogTemp, Warning, TEXT("Camera Rotation = %s"), *Camera->GetComponentRotation().ToString());
-	//UE_LOG(LogTemp, Warning, TEXT("Actor Rotation = %s"), *GetActorRotation().ToString());
+	//if (!bLockCharacterTurn)
+	//{
+	//	float CameraYaw = Camera->GetComponentRotation().Yaw;
+	//	float CharacterYaw = GetActorRotation().Yaw;
+	//	if (FMath::Abs<float>(FRotator::NormalizeAxis(CameraYaw - CharacterYaw)) >= TurnLimit_Yaw)
+	//	{
+	//		USampleAnimInstance_Character* AnimInstance = nullptr;
+	//		if(GetMesh())
+	//			AnimInstance = Cast< USampleAnimInstance_Character>(GetMesh()->GetAnimInstance());
+	//		
+	//		//ServerRotateCharacter(CameraYaw);
+	//		if(AnimInstance)
+	//			AnimInstance->SetTurnInPlaceYaw(CameraYaw);
+	//		//SetActorRotation(FRotator(0.0f, CameraYaw, 0.0f));
+	//		TurnInPlace(CameraYaw);
+	//	}
+	//}
+
+	//SpringArm->AddRelativeRotation(Rotator * TurnRate * WorldDeltaSeconds); // Yaw 회전
+	AddControllerYawInput(InputVector.X * TurnRate * WorldDeltaSeconds); // Pitch 회전
 	AddControllerPitchInput(-InputVector.Y * TurnRate * WorldDeltaSeconds); // Pitch 회전
 }
 
@@ -136,7 +149,32 @@ void ASampleCharacter_Player::StartFire(const FInputActionInstance& Instance)
 	}
 }
 
-void ASampleCharacter_Player::ServerRotateCharacter_Implementation(double RotateAmount)
+void ASampleCharacter_Player::TurnInPlace(double RotateAmount)
 {
+	//UE_LOG(LogTemp, Warning, TEXT("111111111111111111111 %s Rotate: %f"), *GetName(), RotateAmount);
+
+	if (HasAuthority())
+	{
+		MulticastTurnInPlace(RotateAmount);
+		//UE_LOG(LogTemp, Warning, TEXT("111111111111111111111 %s Rotate: %f"), *GetName(), RotateAmount);
+	}
+	else
+	{
+		ServerTurnInPlace(RotateAmount);
+		//UE_LOG(LogTemp, Warning, TEXT("2222222222222222222222222 %s Rotate: %f"), *GetName(), RotateAmount);
+	}
+}
+
+void ASampleCharacter_Player::ServerTurnInPlace_Implementation(double RotateAmount)
+{
+	//UE_LOG(LogTemp, Warning, TEXT("2222222222222222222 %s Rotate: %f"), *GetName(), RotateAmount);
+	//MulticastTurnInPlace(RotateAmount);
+	//UE_LOG(LogTemp, Warning, TEXT("33333333333333333333333333 %s Rotate: %f"), *GetName(), RotateAmount);
+	SetActorRotation(FRotator(0.0f, RotateAmount, 0.0f));
+}
+
+void ASampleCharacter_Player::MulticastTurnInPlace_Implementation(double RotateAmount)
+{
+	//UE_LOG(LogTemp, Warning, TEXT("11111111111111111111"));
 	SetActorRotation(FRotator(0.0f, RotateAmount, 0.0f));
 }

@@ -40,7 +40,21 @@ protected:
 	void StartFire(const FInputActionInstance& Instance);
 
 	UFUNCTION(Server, reliable)
-	void ServerRotateCharacter(double RotateAmount);
+	void ServerTurnInPlace(double RotateAmount);
+
+	UFUNCTION(NetMulticast, reliable)
+	void MulticastTurnInPlace(double RotateAmount);
+
+public:
+
+	UFUNCTION(BlueprintPure)
+	bool GetIsFiring() { return bIsFiring; }
+
+	// TurnInPlace
+
+	void TurnInPlace(double RotateAmount);
+	bool IsLockCharacterTurn() { return bLockCharacterTurn; }
+	
 private:
 
 	// Camera
@@ -91,9 +105,4 @@ private:
 	bool bIsFiring = false;
 
 	TObjectPtr<class ASPWeapon> Weapon;
-
-public:
-
-	UFUNCTION(BlueprintPure)
-	bool GetIsFiring() { return bIsFiring; }
 };
