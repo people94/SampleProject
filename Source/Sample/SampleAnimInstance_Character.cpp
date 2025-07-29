@@ -43,7 +43,7 @@ void USampleAnimInstance_Character::NativeUpdateAnimation(float DeltaSeconds)
 
 		// 제자리 회전
 		TurnInPlace();
-		UE_LOG(LogTemp, Warning, TEXT("RootYawOffset = %f LastYaw = %f"), RootYawOffset, LastRootYaw);
+		//UE_LOG(LogTemp, Warning, TEXT("RootYawOffset = %f LastYaw = %f"), RootYawOffset, LastRootYaw);
 	}
 }
 

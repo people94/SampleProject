@@ -7,11 +7,12 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
-#include "Kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "SPWeapon.h"
 #include "SampleAnimInstance_Character.h"
+#include "Kismet/GameplayStatics.h"
+#include "Blueprint/UserWidget.h"
 
 ASampleCharacter_Player::ASampleCharacter_Player()
 {
@@ -24,8 +25,7 @@ ASampleCharacter_Player::ASampleCharacter_Player()
 	Camera->SetupAttachment(SpringArm);
 	Camera->bUsePawnControlRotation = true;
 
-	// 컨트롤러 방향대로 폰을 움직이지 않는다.
-	bUseControllerRotationYaw = false;
+	bUseControllerRotationYaw = true;
 	bUseControllerRotationRoll = false;
 	bUseControllerRotationPitch = false;
 
@@ -49,7 +49,8 @@ void ASampleCharacter_Player::SetupPlayerInputComponent(UInputComponent* PlayerI
 	EnhancedInputComponent->BindAction(RotateInputAction, ETriggerEvent::Triggered, this, &ASampleCharacter_Player::RotateCharacter);
 	EnhancedInputComponent->BindAction(LockCharacterTurnInputAction, ETriggerEvent::Triggered, this, &ASampleCharacter_Player::ToggleLockCharacterTurn);
 	EnhancedInputComponent->BindAction(CrouchInputAction, ETriggerEvent::Triggered, this, &ASampleCharacter_Player::StartCrouch);
-	EnhancedInputComponent->BindAction(FireInputAction, ETriggerEvent::Triggered, this, &ASampleCharacter_Player::StartFire);
+	EnhancedInputComponent->BindAction(FireInputAction, ETriggerEvent::Started, this, &ASampleCharacter_Player::StartFire);
+	EnhancedInputComponent->BindAction(FireInputAction, ETriggerEvent::Completed, this, &ASampleCharacter_Player::StopFire);
 }
 
 void ASampleCharacter_Player::BeginPlay()
@@ -69,6 +70,27 @@ void ASampleCharacter_Player::BeginPlay()
 			}
 		}
 	}
+
+	// 무기 생성
+	if (GetMesh())
+	{
+		GetMesh()->HideBoneByName(TEXT("weapon_r"), EPhysBodyOp::PBO_None);
+	}
+	AddWeapon(TEXT("/Game/Weapon/BP_Rifle.BP_Rifle_C"));
+	AddWeapon(TEXT("/Game/Weapon/BP_Launcher.BP_Launcher_C"));
+	ChangeWeapon(0);
+
+
+	// Widget 생성
+	if (WidgetClass != nullptr)
+	{
+		PlayerWidget = CreateWidget<UUserWidget>(GetWorld(), WidgetClass);
+		if (PlayerWidget)
+		{
+			PlayerWidget->AddToViewport();
+		}
+	}
+	
 }
 
 void ASampleCharacter_Player::MoveCharacter(const FInputActionInstance& Instance)
@@ -80,9 +102,7 @@ void ASampleCharacter_Player::MoveCharacter(const FInputActionInstance& Instance
 
 	this->AddMovementInput(MoveDirection * WalkSpeed * WorldDeltaSeconds);
 	double RotateAmount = FMath::FInterpConstantTo(GetActorRotation().Yaw, Camera->GetComponentRotation().Yaw, UGameplayStatics::GetWorldDeltaSeconds(this), TurnRate);
-	//ServerRotateCharacter(RotateAmount);
-	//SetActorRotation(FRotator(0.0f, RotateAmount, 0.0f));
-	//ServerRotateCharacter(Camera->GetComponentRotation().Yaw);
+
 	if(bLockCharacterTurn)
 		SetActorRotation(FRotator(0.0f, GetActorRotation().Yaw, 0.0f));
 	else
@@ -95,25 +115,6 @@ void ASampleCharacter_Player::RotateCharacter(const FInputActionInstance& Instan
 	FRotator Rotator(0.0f, InputVector.X, 0.0f);
 	float WorldDeltaSeconds = UGameplayStatics::GetWorldDeltaSeconds(this); // World DeltaSeconds 반영
 
-	//if (!bLockCharacterTurn)
-	//{
-	//	float CameraYaw = Camera->GetComponentRotation().Yaw;
-	//	float CharacterYaw = GetActorRotation().Yaw;
-	//	if (FMath::Abs<float>(FRotator::NormalizeAxis(CameraYaw - CharacterYaw)) >= TurnLimit_Yaw)
-	//	{
-	//		USampleAnimInstance_Character* AnimInstance = nullptr;
-	//		if(GetMesh())
-	//			AnimInstance = Cast< USampleAnimInstance_Character>(GetMesh()->GetAnimInstance());
-	//		
-	//		//ServerRotateCharacter(CameraYaw);
-	//		if(AnimInstance)
-	//			AnimInstance->SetTurnInPlaceYaw(CameraYaw);
-	//		//SetActorRotation(FRotator(0.0f, CameraYaw, 0.0f));
-	//		TurnInPlace(CameraYaw);
-	//	}
-	//}
-
-	//SpringArm->AddRelativeRotation(Rotator * TurnRate * WorldDeltaSeconds); // Yaw 회전
 	AddControllerYawInput(InputVector.X * TurnRate * WorldDeltaSeconds); // Pitch 회전
 	AddControllerPitchInput(-InputVector.Y * TurnRate * WorldDeltaSeconds); // Pitch 회전
 }
@@ -143,38 +144,52 @@ void ASampleCharacter_Player::StartFire(const FInputActionInstance& Instance)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Fire OnGoing"));
 	bIsFiring = Instance.GetValue().Get<bool>();
-	if (Weapon)
+	if (CurrentWeapon)
 	{
-		Weapon->StartFire();
+		CurrentWeapon->StartFire();
 	}
 }
 
-void ASampleCharacter_Player::TurnInPlace(double RotateAmount)
+void ASampleCharacter_Player::StopFire(const FInputActionInstance& Instance)
 {
-	//UE_LOG(LogTemp, Warning, TEXT("111111111111111111111 %s Rotate: %f"), *GetName(), RotateAmount);
-
-	if (HasAuthority())
+	UE_LOG(LogTemp, Warning, TEXT("Fire Stop"));
+	bIsFiring = Instance.GetValue().Get<bool>();
+	if (CurrentWeapon)
 	{
-		MulticastTurnInPlace(RotateAmount);
-		//UE_LOG(LogTemp, Warning, TEXT("111111111111111111111 %s Rotate: %f"), *GetName(), RotateAmount);
+		CurrentWeapon->StopFire();
+	}
+}
+
+void ASampleCharacter_Player::AddWeapon(const FString WeapClassName)
+{
+	if(WeapClassName == TEXT(""))
+		return;
+
+	if (GetWorld() == nullptr)
+	{
+		return;
+	}
+
+	UClass * WeaponClass = LoadClass<ASPWeapon>(nullptr, *WeapClassName);
+
+	if (WeaponClass)
+	{
+		ASPWeapon* newWeapon = GetWorld()->SpawnActor<ASPWeapon>(WeaponClass);
+		Weapons.Add(newWeapon);
+	}
+}
+
+void ASampleCharacter_Player::ChangeWeapon(const int WeaponIndex)
+{
+	if (Weapons.Num() == 0 || WeaponIndex > Weapons.Num() - 1)
+		return;
+
+	CurrentWeaponIndex = WeaponIndex;
+	if (Weapons[CurrentWeaponIndex])
+	{
+		Weapons[CurrentWeaponIndex]->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, TEXT("WeaponSocket"));
+		CurrentWeapon = Weapons[CurrentWeaponIndex];
 	}
 	else
-	{
-		ServerTurnInPlace(RotateAmount);
-		//UE_LOG(LogTemp, Warning, TEXT("2222222222222222222222222 %s Rotate: %f"), *GetName(), RotateAmount);
-	}
-}
-
-void ASampleCharacter_Player::ServerTurnInPlace_Implementation(double RotateAmount)
-{
-	//UE_LOG(LogTemp, Warning, TEXT("2222222222222222222 %s Rotate: %f"), *GetName(), RotateAmount);
-	//MulticastTurnInPlace(RotateAmount);
-	//UE_LOG(LogTemp, Warning, TEXT("33333333333333333333333333 %s Rotate: %f"), *GetName(), RotateAmount);
-	SetActorRotation(FRotator(0.0f, RotateAmount, 0.0f));
-}
-
-void ASampleCharacter_Player::MulticastTurnInPlace_Implementation(double RotateAmount)
-{
-	//UE_LOG(LogTemp, Warning, TEXT("11111111111111111111"));
-	SetActorRotation(FRotator(0.0f, RotateAmount, 0.0f));
+		debugf(TEXT("Weapons[%d] is Empty!!!"), CurrentWeaponIndex);
 }

@@ -39,21 +39,20 @@ protected:
 
 	void StartFire(const FInputActionInstance& Instance);
 
-	UFUNCTION(Server, reliable)
-	void ServerTurnInPlace(double RotateAmount);
-
-	UFUNCTION(NetMulticast, reliable)
-	void MulticastTurnInPlace(double RotateAmount);
+	void StopFire(const FInputActionInstance& Instance);
 
 public:
 
-	UFUNCTION(BlueprintPure)
-	bool GetIsFiring() { return bIsFiring; }
-
 	// TurnInPlace
 
-	void TurnInPlace(double RotateAmount);
 	bool IsLockCharacterTurn() { return bLockCharacterTurn; }
+
+	// Weapon
+
+	void AddWeapon(const FString WeapClassName);
+	void ChangeWeapon(const int WeaponIdx);
+	UFUNCTION(BlueprintPure)
+	bool GetIsFiring() { return bIsFiring; }
 	
 private:
 
@@ -103,6 +102,15 @@ private:
 	// Weapon
 
 	bool bIsFiring = false;
+	int CurrentWeaponIndex = 0;
 
-	TObjectPtr<class ASPWeapon> Weapon;
+	TObjectPtr<class ASPWeapon> CurrentWeapon;
+	TArray < TObjectPtr<class ASPWeapon> > Weapons;
+
+	// Widget
+
+	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = "true"), Category = "Widget")
+	TSubclassOf<class UUserWidget> WidgetClass;
+	UUserWidget* PlayerWidget;
+
 };
