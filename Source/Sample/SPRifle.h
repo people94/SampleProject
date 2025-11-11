@@ -20,4 +20,16 @@ public:
 public:
 
 	virtual void FireProjectile() override;
+
+private:
+
+	// Bullet
+
+	UPROPERTY(VisibleAnywhere, meta = (AllowPrivateAccess = "true"), Category = "Bullet")
+	TObjectPtr<class USceneComponent> ProjectileSpawnPosition;
+
+	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = "true"), Category = "Bullet")
+	TSubclassOf<class ASPProjectile> ProjectileClass;
+
+	TObjectPtr<class ASPProjectile> Projectile;
 };

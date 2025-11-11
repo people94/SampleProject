@@ -2,6 +2,7 @@
 
 
 #include "SPProjectile.h"
+#include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
@@ -9,44 +10,42 @@
 ASPProjectile::ASPProjectile()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
-	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	if (Root)
+	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
+	if (CollisionComponent)
 	{
-		SetRootComponent(Root);
-		Root->SetAbsolute(false, false, false);
+		CollisionComponent->InitSphereRadius(CollisionRadius);
+		CollisionComponent->SetNotifyRigidBodyCollision(true);
+		SetRootComponent(CollisionComponent);
+	
+		CollisionComponent->OnComponentHit.AddDynamic(this, &ASPProjectile::OnHit);
+		CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &ASPProjectile::OnBeginOverlap);
 	}
-
+	
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	if (Mesh)
 	{
 		Mesh->SetupAttachment(GetRootComponent());
 	}
-
+	
 	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
 	if (ProjectileMovementComponent)
 	{
-		ProjectileMovementComponent->InitialSpeed = 2000.0f;
-		ProjectileMovementComponent->MaxSpeed = 2000.0f;
-		ProjectileMovementComponent->bRotationFollowsVelocity = true;
-		ProjectileMovementComponent->ProjectileGravityScale = 0.0f;
-
 		ProjectileMovementComponent->SetUpdatedComponent(GetRootComponent());
 	}
 }
 
-// Called when the game starts or when spawned
-void ASPProjectile::BeginPlay()
+void ASPProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	Super::BeginPlay();
-	
+	//debugf(TEXT("Parent OnHit"));
+	HandleHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
+	Destroy();
 }
 
-// Called every frame
-void ASPProjectile::Tick(float DeltaTime)
+void ASPProjectile::OnBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	Super::Tick(DeltaTime);
-
+	//debugf(TEXT("Parent OnBeginOverlap"));
+	HandleBeginOverlap(OverlappedComp, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+	Destroy();
 }
-

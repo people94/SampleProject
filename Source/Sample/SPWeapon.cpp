@@ -3,6 +3,7 @@
 
 #include "SPWeapon.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 
 
@@ -11,24 +12,6 @@ ASPWeapon::ASPWeapon()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
-	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	if(Root)
-	{
-		SetRootComponent(Root);
-	}
-
-	ProjectileSpawnPosition = CreateDefaultSubobject<USceneComponent>(TEXT("ProjectilePosition"));
-	if (ProjectileSpawnPosition)
-	{
-		ProjectileSpawnPosition->SetupAttachment(GetRootComponent());
-	}
-
-	Mesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh"));
-	if (Mesh)
-	{
-		Mesh->SetupAttachment(GetRootComponent());
-	}
 }
 
 void ASPWeapon::Tick(float DeltaTime)

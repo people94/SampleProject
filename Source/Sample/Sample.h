@@ -6,3 +6,4 @@
 #include "Engine/LocalPlayer.h"
 
 #define debugf(Fmt, ...) UE_LOG(LogTemp, Warning, Fmt __VA_OPT__(,) __VA_ARGS__)
+#define MAXWEAPONCNT 5

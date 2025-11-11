@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "SPItem.h"
 #include "TimerManager.h"
 #include "SPWeapon.generated.h"
 
@@ -16,7 +16,7 @@ enum class EFireType : uint8
 };
 
 UCLASS(Abstract)
-class SAMPLE_API ASPWeapon : public AActor
+class SAMPLE_API ASPWeapon : public ASPItem
 {
 	GENERATED_BODY()
 	
@@ -41,28 +41,28 @@ public:
 	virtual void FireLineTrace() {}
 	void SetIsFiring(bool IsFiring) { bIsFiring = IsFiring; }
 	bool GetIsFiring() { return bIsFiring; }
+	float GetDamage() { return Damage; }
+	TSubclassOf<UDamageType> GetDamageType() { return DamageType; }
 
 protected:
-	UPROPERTY(VisibleAnywhere, meta = (AllowPrivateAccess = "true"), Category = "Mesh")
-	TObjectPtr<class USceneComponent> Root;
-
-	UPROPERTY(VisibleAnywhere, meta = (AllowPrivateAccess ="true"), Category="Mesh")
-	TObjectPtr<class USkeletalMeshComponent> Mesh;
-
-	UPROPERTY(VisibleAnywhere, meta = (AllowPrivateAccess = "true"), Category = "Projectile")
-	TObjectPtr<class USceneComponent> ProjectileSpawnPosition;
-
-	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = "true"), Category = "Projectile")
-	TSubclassOf<class ASPProjectile> ProjectileClass;
-
-	TObjectPtr<class ASPProjectile> Projectile;
+	// Firing
 
 	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = "true"), Category = "Firing")
-	float fFireInterval = 5.0f;
+	float fFireInterval = 0.0f;
+
+	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = "true"), Category = "Firing")
+	float fFireRange = 0.0f;
+
 	bool bIsFiring = false;
 
 	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = "true"), Category = "Firing")
 	EFireType FireType = EFireType::EF_None;
 
 	FTimerHandle FireTimerHandle;
+
+	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = "true"), Category = "Firing")
+	float Damage = 0.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	TSubclassOf<UDamageType> DamageType;
 };
